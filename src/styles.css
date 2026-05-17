@@ -132,6 +132,7 @@ body {
   margin-inline: auto;
   padding: 1.25rem var(--page-px) 1.5rem;
   align-items: stretch;
+  height: clamp(460px, 55vh, 620px);
 }
 
 .hero-content {
@@ -162,7 +163,6 @@ body {
 .hero-image {
   border-radius: 20px;
   overflow: hidden;
-  min-height: 420px;
   background: #3a3f9e;
 }
 
@@ -512,6 +512,7 @@ body {
 
   .hero {
     grid-template-columns: 1fr;
+    height: auto;
     padding: 1rem var(--page-px-sm) 1.25rem;
   }
 
@@ -520,8 +521,8 @@ body {
   }
 
   .hero-image {
-    min-height: 280px;
-    order: 1; /* image below on mobile */
+    height: 280px;
+    order: 1;
   }
 
   .signup-form {

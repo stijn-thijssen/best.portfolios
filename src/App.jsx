@@ -93,6 +93,7 @@ function useHash() {
 }
 
 function navigate(path) {
+  window.scrollTo(0, 0);
   window.location.hash = path;
 }
 
@@ -154,17 +155,23 @@ function HomePage() {
 
   return (
     <>
-      <m.section
-        className="hero"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-      >
+      <section className="hero">
         <div className="hero-content">
-          <h1>The best design portfolio websites in one place</h1>
-          <p className="hero-sub">
+          <m.h1
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+          >
+            The best design portfolio websites in one place
+          </m.h1>
+          <m.p
+            className="hero-sub"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
+          >
             Discover curated design portfolio websites. Create your portfolio website with top-notch web design inspiration.
-          </p>
+          </m.p>
           <form
             id="signup"
             className="signup-form"
@@ -183,7 +190,7 @@ function HomePage() {
         <div className="hero-image">
           <img src={heroImage} alt="Portfolio design inspiration" />
         </div>
-      </m.section>
+      </section>
 
       <section className="curation" aria-label="Portfolio directory">
         <div className="filter-bar">

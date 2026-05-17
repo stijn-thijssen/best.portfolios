@@ -1,0 +1,51 @@
+import { sanityClient } from './sanity';
+
+const projectFields = `
+  _id,
+  portfolioName,
+  "slug": slug.current,
+  thumbnail,
+  media,
+  portfolioDescription,
+  portfolioLink,
+  "category": category->title,
+  "portfolioType": portfolioType[]->title,
+  "curator": curator->{ name, image, link }
+`;
+
+export const projectsQuery = `*[_type == "project"] | order(portfolioName asc) {
+  _id,
+  portfolioName,
+  "slug": slug.current,
+  thumbnail,
+  "category": category->title,
+  "styles": portfolioType[]->title
+}`;
+
+export const categoriesQuery = `*[_type == "category"] | order(title asc) {
+  title
+}`;
+
+export const stylesQuery = `*[_type == "portfolioType"] | order(title asc) {
+  title
+}`;
+
+export const projectBySlugQuery = `*[_type == "project" && slug.current == $slug][0] {
+  ${projectFields}
+}`;
+
+export async function fetchProjects() {
+  return sanityClient.fetch(projectsQuery);
+}
+
+export async function fetchCategories() {
+  return sanityClient.fetch(categoriesQuery);
+}
+
+export async function fetchStyles() {
+  return sanityClient.fetch(stylesQuery);
+}
+
+export async function fetchProjectBySlug(slug) {
+  return sanityClient.fetch(projectBySlugQuery, { slug });
+}

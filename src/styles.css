@@ -23,8 +23,9 @@
   --text-lg:   1.0625rem;
 
   /* Spacing */
-  --nav-h:     64px;
-  --page-px:   2rem;
+  --nav-h:      64px;
+  --page-max-w: 1600px;
+  --page-px:    2rem;
   --page-px-sm: 1rem;
 
   /* Radii */
@@ -57,7 +58,8 @@ body {
   align-items: center;
   justify-content: space-between;
   height: var(--nav-h);
-  padding: 0 var(--page-px);
+  /* Full-bleed background/border, content aligns with page max-width */
+  padding-inline: max(var(--page-px), calc((100% - var(--page-max-w)) / 2 + var(--page-px)));
   background: var(--clr-bg);
   border-bottom: 1px solid var(--clr-border);
 }
@@ -132,6 +134,8 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  max-width: var(--page-max-w);
+  margin-inline: auto;
   padding: 1.25rem var(--page-px) 1.5rem;
   align-items: stretch;
 }
@@ -201,8 +205,8 @@ body {
 .curation {
   border-top: 1px solid var(--clr-border);
   padding: 1.5rem var(--page-px) 5rem;
-  max-width: 1280px;
-  margin: 0 auto;
+  max-width: var(--page-max-w);
+  margin-inline: auto;
 }
 
 .filter-bar {
@@ -360,6 +364,8 @@ body {
   display: grid;
   grid-template-columns: 360px 1fr;
   min-height: calc(100dvh - var(--nav-h));
+  max-width: var(--page-max-w);
+  margin-inline: auto;
 }
 
 /* Sidebar */
@@ -489,7 +495,7 @@ body {
 }
 
 @media (max-width: 768px) {
-  .curation      { padding: 1.25rem 1.25rem 3.5rem; }
+  .curation      { padding: 1.25rem var(--page-px-sm) 3.5rem; }
   .detail-layout { grid-template-columns: 1fr; }
 
   .detail-sidebar {

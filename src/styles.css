@@ -51,17 +51,12 @@ body {
 
 /* ── Navbar ── */
 .navbar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: var(--nav-h);
-  /* Full-bleed background/border, content aligns with page max-width */
   padding-inline: max(var(--page-px), calc((100% - var(--page-max-w)) / 2 + var(--page-px)));
   background: var(--clr-bg);
-  border-bottom: 1px solid var(--clr-border);
 }
 
 .nav-logo {
@@ -203,7 +198,6 @@ body {
 
 /* ── Curation section ── */
 .curation {
-  border-top: 1px solid var(--clr-border);
   padding: 1.5rem var(--page-px) 5rem;
   max-width: var(--page-max-w);
   margin-inline: auto;
@@ -376,8 +370,8 @@ body {
   padding: 2.5rem var(--page-px);
   border-right: 1px solid var(--clr-border);
   position: sticky;
-  top: var(--nav-h);
-  height: calc(100dvh - var(--nav-h));
+  top: 0;
+  height: 100dvh;
   overflow-y: auto;
 }
 

@@ -236,7 +236,7 @@ function HomePage() {
               aria-label={`View ${p.author}`}
             >
               <div className="card-image" aria-hidden="true" />
-              <p className="card-author">{p.author}</p>
+              <p className="card-author">Portfolio Name</p>
             </m.article>
           ))}
         </div>

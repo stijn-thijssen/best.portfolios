@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { m } from 'framer-motion';
+import heroImage from './assets/header-image.png';
 
 /* ── Data ─────────────────────────────────────────── */
 
@@ -180,7 +181,7 @@ function HomePage() {
           </form>
         </div>
         <div className="hero-image">
-          <img src="/hero-image.jpg" alt="Portfolio design inspiration" />
+          <img src={heroImage} alt="Portfolio design inspiration" />
         </div>
       </m.section>
 

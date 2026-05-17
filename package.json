@@ -1,0 +1,19 @@
+{
+  "name": "best-portfolios",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run check:deps && astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check:deps": "node scripts/check-deps.mjs"
+  },
+  "dependencies": {
+    "@astrojs/react": "^4.4.0",
+    "astro": "^5.9.3",
+    "framer-motion": "^11.18.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

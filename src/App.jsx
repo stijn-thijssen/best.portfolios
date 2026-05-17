@@ -155,28 +155,33 @@ function HomePage() {
     <>
       <m.section
         className="hero"
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
       >
-        <h1>Get web design inspiration from the best portfolio websites</h1>
-        <p className="hero-sub">
-          Discover curated design portfolio websites. Create your portfolio website with top-notch web design inspiration.
-        </p>
-        <form
-          id="signup"
-          className="signup-form"
-          onSubmit={e => e.preventDefault()}
-          aria-label="Email signup"
-        >
-          <input
-            type="email"
-            placeholder="johndoe@gmail.com"
-            className="email-input"
-            aria-label="Email address"
-          />
-          <button type="submit" className="btn btn-primary">Get inspired →</button>
-        </form>
+        <div className="hero-content">
+          <h1>The best design portfolio websites in one place</h1>
+          <p className="hero-sub">
+            Discover curated design portfolio websites. Create your portfolio website with top-notch web design inspiration.
+          </p>
+          <form
+            id="signup"
+            className="signup-form"
+            onSubmit={e => e.preventDefault()}
+            aria-label="Email signup"
+          >
+            <input
+              type="email"
+              placeholder="johndoe@gmail.com"
+              className="email-input"
+              aria-label="Email address"
+            />
+            <button type="submit" className="btn btn-primary">Get inspired →</button>
+          </form>
+        </div>
+        <div className="hero-image">
+          <img src="/hero-image.jpg" alt="Portfolio design inspiration" />
+        </div>
       </m.section>
 
       <section className="curation" aria-label="Portfolio directory">

@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "dev:studio": "npm run dev --prefix studio",
+    "build": "vite build && npm run build:studio",
+    "build:studio": "npm ci --prefix studio && npm run build --prefix studio && node scripts/copy-studio.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

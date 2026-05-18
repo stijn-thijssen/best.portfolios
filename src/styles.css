@@ -32,7 +32,7 @@
   --radius-pill: 9999px;
   --radius-card: 12px;
   --radius-menu: 12px;
-  --radius-logo: 7px;
+  --radius-logo: 10px;
 
   color-scheme: light;
   font-family: var(--font-sans);
@@ -76,6 +76,8 @@ body {
   width: 32px;
   height: 32px;
   flex-shrink: 0;
+  border-radius: var(--radius-logo);
+  overflow: hidden;
 }
 
 .logo-text {

@@ -109,6 +109,8 @@ function Navbar() {
 
 function StyleFilterDropdown({ options, selected, onChange, isOpen, onToggle }) {
   const ref = useRef(null);
+  const menuRef = useRef(null);
+  const [menuAlign, setMenuAlign] = useState('left');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -118,6 +120,17 @@ function StyleFilterDropdown({ options, selected, onChange, isOpen, onToggle }) 
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [isOpen, onToggle]);
+
+  useEffect(() => {
+    if (!isOpen || !menuRef.current) return;
+    const menuRect = menuRef.current.getBoundingClientRect();
+    const spaceRight = window.innerWidth - menuRect.left;
+    if (spaceRight < menuRect.width) {
+      setMenuAlign('right');
+    } else {
+      setMenuAlign('left');
+    }
+  }, [isOpen]);
 
   return (
     <div className="dropdown-wrap" ref={ref}>
@@ -132,7 +145,7 @@ function StyleFilterDropdown({ options, selected, onChange, isOpen, onToggle }) 
         <span className="chevron" aria-hidden="true">▾</span>
       </button>
       {isOpen && (
-        <div className="dropdown-menu" role="menu" aria-label="Filter by style">
+        <div className={`dropdown-menu dropdown-menu--${menuAlign}`} ref={menuRef} role="menu" aria-label="Filter by style">
           {options.length === 0 ? (
             <p className="dropdown-empty">No styles in CMS yet</p>
           ) : (
@@ -624,6 +637,10 @@ function CategoryPage({ slug }) {
 
       <section className="curation" aria-label={`${heading} portfolios`}>
         <div className="filter-bar filter-bar--style-only">
+          <button className="back-link" type="button" onClick={() => navigate('/')}>
+            ← All categories
+          </button>
+          <span className="filter-bar-divider" aria-hidden="true" />
           <StyleFilterBar
             options={styleOptions}
             selected={selectedStyles}

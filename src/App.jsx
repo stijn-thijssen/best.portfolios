@@ -49,6 +49,15 @@ function navigate(path) {
   }
 }
 
+function useDocumentTitle(title) {
+  useEffect(() => {
+    if (!title) return undefined;
+    const previous = document.title;
+    document.title = title;
+    return () => { document.title = previous; };
+  }, [title]);
+}
+
 /* ── Shared components ────────────────────────────── */
 
 const NAV_CTA_LABEL = 'Get inspired →';
@@ -168,6 +177,65 @@ function StyleFilterDropdown({ options, selected, onChange, isOpen, onToggle }) 
   );
 }
 
+function StyleFilterBar({ options, selected, onChange, isOpen, onToggle }) {
+  return (
+    <div className="filter-bar-style">
+      <div className="dropdowns">
+        <StyleFilterDropdown
+          options={options}
+          selected={selected}
+          onChange={onChange}
+          isOpen={isOpen}
+          onToggle={onToggle}
+        />
+        {selected.length > 0 && (
+          <button
+            type="button"
+            className="filter-clear"
+            onClick={() => {
+              onChange([]);
+              onToggle(false);
+            }}
+          >
+            Remove filters
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PortfolioGrid({ projects }) {
+  return (
+    <div className="portfolio-grid">
+      {projects.map((p, i) => {
+        const thumbnailUrl = urlFor(p.thumbnail);
+        return (
+          <m.article
+            key={p._id}
+            className="portfolio-card"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: i * 0.05, ease: 'easeOut' }}
+            onClick={() => p.slug && navigate(`/portfolio/${p.slug}`)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => e.key === 'Enter' && p.slug && navigate(`/portfolio/${p.slug}`)}
+            aria-label={`View ${p.portfolioName}`}
+          >
+            <div className="card-image" aria-hidden="true">
+              {thumbnailUrl && (
+                <img src={thumbnailUrl} alt="" loading="lazy" />
+              )}
+            </div>
+            <p className="card-author">{p.portfolioName}</p>
+          </m.article>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── Home page ────────────────────────────────────── */
 
 function HomePage() {
@@ -271,61 +339,20 @@ function HomePage() {
               </button>
             ))}
           </div>
-          <div className="filter-bar-style">
-            <span className="filter-bar-divider" aria-hidden="true" />
-            <div className="dropdowns">
-              <StyleFilterDropdown
-                options={styleOptions}
-                selected={selectedStyles}
-                onChange={setSelectedStyles}
-                isOpen={styleOpen}
-                onToggle={setStyleOpen}
-              />
-              {selectedStyles.length > 0 && (
-                <button
-                  type="button"
-                  className="filter-clear"
-                  onClick={() => {
-                    setSelectedStyles([]);
-                    setStyleOpen(false);
-                  }}
-                >
-                  Remove filters
-                </button>
-              )}
-            </div>
-          </div>
+          <span className="filter-bar-divider" aria-hidden="true" />
+          <StyleFilterBar
+            options={styleOptions}
+            selected={selectedStyles}
+            onChange={setSelectedStyles}
+            isOpen={styleOpen}
+            onToggle={setStyleOpen}
+          />
         </div>
 
         {error && <p className="grid-status grid-status--error" role="alert">{error}</p>}
         {loading && !error && <p className="grid-status">Loading portfolios…</p>}
 
-        <div className="portfolio-grid">
-          {filteredProjects.map((p, i) => {
-            const thumbnailUrl = urlFor(p.thumbnail);
-            return (
-              <m.article
-                key={p._id}
-                className="portfolio-card"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.05, ease: 'easeOut' }}
-                onClick={() => p.slug && navigate(`/portfolio/${p.slug}`)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={e => e.key === 'Enter' && p.slug && navigate(`/portfolio/${p.slug}`)}
-                aria-label={`View ${p.portfolioName}`}
-              >
-                <div className="card-image" aria-hidden="true">
-                  {thumbnailUrl && (
-                    <img src={thumbnailUrl} alt="" loading="lazy" />
-                  )}
-                </div>
-                <p className="card-author">{p.portfolioName}</p>
-              </m.article>
-            );
-          })}
-        </div>
+        {!loading && !error && <PortfolioGrid projects={filteredProjects} />}
       </section>
     </>
   );
@@ -497,10 +524,33 @@ function DetailPage({ slug }) {
 /* ── Category page ────────────────────────────────── */
 
 function CategoryPage({ slug }) {
-  const [category, setCategory] = useState(null);
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [category, setCategory]           = useState(null);
+  const [projects, setProjects]           = useState([]);
+  const [styles, setStyles]               = useState([]);
+  const [styleOpen, setStyleOpen]         = useState(false);
+  const [selectedStyles, setSelectedStyles] = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState(null);
+
+  useDocumentTitle(category?.metaTitle);
+
+  const styleOptions = useMemo(
+    () => styles.map(s => s.title).filter(Boolean),
+    [styles],
+  );
+
+  const filteredProjects = useMemo(() => {
+    if (selectedStyles.length === 0) return projects;
+    return projects.filter(p => {
+      const projectStyles = p.styles ?? [];
+      return selectedStyles.some(style => projectStyles.includes(style));
+    });
+  }, [projects, selectedStyles]);
+
+  useEffect(() => {
+    setSelectedStyles([]);
+    setStyleOpen(false);
+  }, [slug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -508,8 +558,12 @@ function CategoryPage({ slug }) {
     setError(null);
     setCategory(null);
     setProjects([]);
-    Promise.all([fetchCategoryBySlug(slug), fetchProjectsByCategorySlug(slug)])
-      .then(([categoryData, projectData]) => {
+    Promise.all([
+      fetchCategoryBySlug(slug),
+      fetchProjectsByCategorySlug(slug),
+      fetchStyles(),
+    ])
+      .then(([categoryData, projectData, styleData]) => {
         if (cancelled) return;
         if (!categoryData) {
           setError('Category not found');
@@ -517,6 +571,7 @@ function CategoryPage({ slug }) {
         }
         setCategory(categoryData);
         setProjects(projectData ?? []);
+        setStyles(styleData ?? []);
       })
       .catch(err => {
         if (!cancelled) setError(err.message ?? 'Failed to load category');
@@ -527,61 +582,66 @@ function CategoryPage({ slug }) {
     return () => { cancelled = true; };
   }, [slug]);
 
-  const heading = category?.h1 || category?.title;
-  const hasDescription = Array.isArray(category?.description) && category.description.length > 0;
+  if (loading) {
+    return <p className="detail-status">Loading category…</p>;
+  }
+
+  if (error || !category) {
+    return (
+      <div className="detail-status">
+        <p role="alert">{error ?? 'Category not found'}</p>
+        <button className="back-link" type="button" onClick={() => navigate('/')}>
+          ← Back to overview
+        </button>
+      </div>
+    );
+  }
+
+  const heading = category.h1 || category.title;
+  const hasDescription = Array.isArray(category.description) && category.description.length > 0;
 
   return (
-    <section className="curation category-page" aria-label={heading ?? 'Category'}>
-      <button className="back-link" onClick={() => navigate('/')}>
-        ← Overview
-      </button>
+    <>
+      <header className="category-header">
+        <m.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+        >
+          {heading}
+        </m.h1>
+        {hasDescription && (
+          <m.div
+            className="category-description"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
+          >
+            <PortableText value={category.description} />
+          </m.div>
+        )}
+      </header>
 
-      {loading && <p className="grid-status">Loading category…</p>}
-      {error && <p className="grid-status grid-status--error" role="alert">{error}</p>}
+      <section className="curation" aria-label={`${heading} portfolios`}>
+        <div className="filter-bar filter-bar--style-only">
+          <StyleFilterBar
+            options={styleOptions}
+            selected={selectedStyles}
+            onChange={setSelectedStyles}
+            isOpen={styleOpen}
+            onToggle={setStyleOpen}
+          />
+        </div>
 
-      {!loading && !error && category && (
-        <>
-          {heading && <h1 className="category-title">{heading}</h1>}
-          {hasDescription && (
-            <m.div
-              className="category-description"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-            >
-              <PortableText value={category.description} />
-            </m.div>
-          )}
+        {filteredProjects.length === 0 && (
+          <p className="grid-status">No portfolios in this category yet.</p>
+        )}
 
-          <div className="portfolio-grid">
-            {projects.map((p, i) => {
-              const thumbnailUrl = urlFor(p.thumbnail);
-              return (
-                <m.article
-                  key={p._id}
-                  className="portfolio-card"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: i * 0.05, ease: 'easeOut' }}
-                  onClick={() => p.slug && navigate(`/portfolio/${p.slug}`)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={e => e.key === 'Enter' && p.slug && navigate(`/portfolio/${p.slug}`)}
-                  aria-label={`View ${p.portfolioName}`}
-                >
-                  <div className="card-image" aria-hidden="true">
-                    {thumbnailUrl && (
-                      <img src={thumbnailUrl} alt="" loading="lazy" />
-                    )}
-                  </div>
-                  <p className="card-author">{p.portfolioName}</p>
-                </m.article>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </section>
+        {filteredProjects.length > 0 && (
+          <PortfolioGrid projects={filteredProjects} />
+        )}
+      </section>
+    </>
   );
 }
 

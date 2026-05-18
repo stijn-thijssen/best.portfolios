@@ -220,8 +220,12 @@ body {
   color: var(--clr-text-muted);
   font-size: 1rem;
   line-height: 1.65;
-  max-width: 44ch;
+  max-width: 52ch;
   margin: 0;
+}
+
+.hero-cta {
+  align-self: flex-start;
 }
 
 .hero-image {
@@ -307,6 +311,28 @@ body {
   padding: 1.5rem var(--page-px) 5rem;
   max-width: var(--page-max-w);
   margin-inline: auto;
+}
+
+.category-page .back-link {
+  margin-bottom: 1.25rem;
+}
+
+.category-title {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+}
+
+.category-description {
+  color: var(--clr-muted);
+  max-width: 42rem;
+  margin-bottom: 1.75rem;
+  line-height: 1.6;
+}
+
+.category-description p + p {
+  margin-top: 0.75rem;
 }
 
 .filter-bar {

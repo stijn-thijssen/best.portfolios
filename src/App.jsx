@@ -11,23 +11,51 @@ import {
   fetchProjectsByCategorySlug,
 } from './lib/queries';
 
-/* ── Hash router ──────────────────────────────────── */
+/* ── History router ───────────────────────────────── */
 
-const RESERVED_PATH_SEGMENTS = new Set(['portfolio']);
+const RESERVED_SEGMENTS = new Set(['portfolio', 'studio']);
 
-function useHash() {
-  const [hash, setHash] = useState(window.location.hash || '#/');
+function parsePath(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/';
+  if (path === '/') return { page: 'home' };
+
+  const segments = path.split('/').filter(Boolean);
+  if (segments[0] === 'portfolio' && segments[1]) {
+    return { page: 'detail', slug: decodeURIComponent(segments[1]) };
+  }
+  if (segments.length === 1 && !RESERVED_SEGMENTS.has(segments[0])) {
+    return { page: 'category', slug: decodeURIComponent(segments[0]) };
+  }
+
+  return { page: 'home' };
+}
+
+function usePathname() {
+  const [pathname, setPathname] = useState(() => window.location.pathname);
   useEffect(() => {
-    const fn = () => setHash(window.location.hash || '#/');
-    window.addEventListener('hashchange', fn);
-    return () => window.removeEventListener('hashchange', fn);
+    const sync = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', sync);
+    return () => window.removeEventListener('popstate', sync);
   }, []);
-  return hash;
+  return pathname;
 }
 
 function navigate(path) {
   window.scrollTo(0, 0);
-  window.location.hash = path;
+  const target = path.startsWith('/') ? path : `/${path}`;
+  if (window.location.pathname !== target) {
+    window.history.pushState(null, '', target);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+}
+
+function useDocumentTitle(title) {
+  useEffect(() => {
+    if (!title) return undefined;
+    const previous = document.title;
+    document.title = title;
+    return () => { document.title = previous; };
+  }, [title]);
 }
 
 function useDocumentTitle(title) {
@@ -62,17 +90,28 @@ function AnimatedButtonText({ text, className = 'btn-animated-text' }) {
   );
 }
 
+function InspireCta({ className = 'nav-cta', id }) {
+  return (
+    <a
+      href="#signup"
+      id={id}
+      className={`btn btn-primary btn-animated ${className}`.trim()}
+      aria-label={NAV_CTA_LABEL}
+    >
+      <span className="btn-animated-bg" aria-hidden="true" />
+      <AnimatedButtonText text={NAV_CTA_LABEL} />
+    </a>
+  );
+}
+
 function Navbar() {
   return (
     <nav className="navbar">
-      <button className="nav-logo" onClick={() => navigate('#/')}>
+      <button className="nav-logo" onClick={() => navigate('/')}>
         <img src="/logo.svg" alt="" aria-hidden="true" className="logo-icon" />
         <span className="logo-text">Best Portfolio Websites</span>
       </button>
-      <a href="#signup" className="btn btn-primary btn-animated nav-cta" aria-label={NAV_CTA_LABEL}>
-        <span className="btn-animated-bg" aria-hidden="true" />
-        <AnimatedButtonText text={NAV_CTA_LABEL} />
-      </a>
+      <InspireCta />
     </nav>
   );
 }
@@ -187,10 +226,10 @@ function PortfolioGrid({ projects }) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: i * 0.05, ease: 'easeOut' }}
-            onClick={() => p.slug && navigate(`#/portfolio/${p.slug}`)}
+            onClick={() => p.slug && navigate(`/portfolio/${p.slug}`)}
             role="button"
             tabIndex={0}
-            onKeyDown={e => e.key === 'Enter' && p.slug && navigate(`#/portfolio/${p.slug}`)}
+            onKeyDown={e => e.key === 'Enter' && p.slug && navigate(`/portfolio/${p.slug}`)}
             aria-label={`View ${p.portfolioName}`}
           >
             <div className="card-image" aria-hidden="true">
@@ -277,7 +316,7 @@ function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: 'easeOut' }}
           >
-            The best design portfolio websites in one place
+            Best portfolio websites for designers &amp; creatives
           </m.h1>
           <m.p
             className="hero-sub"
@@ -285,25 +324,9 @@ function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
           >
-            Discover curated design portfolio websites. Create your portfolio website with top-notch web design inspiration.
+            Discover curated portfolio websites from leading designers, creatives, and digital studios.
           </m.p>
-          <form
-            id="signup"
-            className="signup-form"
-            onSubmit={e => e.preventDefault()}
-            aria-label="Email signup"
-          >
-            <input
-              type="email"
-              placeholder="johndoe@gmail.com"
-              className="email-input"
-              aria-label="Email address"
-            />
-            <button type="submit" className="btn btn-primary btn-animated signup-submit" aria-label="Get inspired">
-              <span className="btn-animated-bg" aria-hidden="true" />
-              <AnimatedButtonText text="→" />
-            </button>
-          </form>
+          <InspireCta id="signup" className="nav-cta hero-cta" />
         </div>
         <div className="hero-image">
           <img src={heroImage} alt="Portfolio design inspiration" />
@@ -339,130 +362,6 @@ function HomePage() {
         {loading && !error && <p className="grid-status">Loading portfolios…</p>}
 
         {!loading && !error && <PortfolioGrid projects={filteredProjects} />}
-      </section>
-    </>
-  );
-}
-
-/* ── Category page ────────────────────────────────── */
-
-function CategoryPage({ slug }) {
-  const [category, setCategory]           = useState(null);
-  const [projects, setProjects]           = useState([]);
-  const [styles, setStyles]               = useState([]);
-  const [styleOpen, setStyleOpen]         = useState(false);
-  const [selectedStyles, setSelectedStyles] = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState(null);
-
-  useDocumentTitle(category?.metaTitle);
-
-  const styleOptions = useMemo(
-    () => styles.map(s => s.title).filter(Boolean),
-    [styles],
-  );
-
-  const filteredProjects = useMemo(() => {
-    if (selectedStyles.length === 0) return projects;
-    return projects.filter(p => {
-      const projectStyles = p.styles ?? [];
-      return selectedStyles.some(style => projectStyles.includes(style));
-    });
-  }, [projects, selectedStyles]);
-
-  useEffect(() => {
-    setSelectedStyles([]);
-    setStyleOpen(false);
-  }, [slug]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setCategory(null);
-    setProjects([]);
-    Promise.all([
-      fetchCategoryBySlug(slug),
-      fetchProjectsByCategorySlug(slug),
-      fetchStyles(),
-    ])
-      .then(([categoryData, projectData, styleData]) => {
-        if (cancelled) return;
-        if (!categoryData) {
-          setError('Category not found');
-          return;
-        }
-        setCategory(categoryData);
-        setProjects(projectData ?? []);
-        setStyles(styleData ?? []);
-      })
-      .catch(err => {
-        if (!cancelled) setError(err.message ?? 'Failed to load category');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [slug]);
-
-  if (loading) {
-    return <p className="detail-status">Loading category…</p>;
-  }
-
-  if (error || !category) {
-    return (
-      <div className="detail-status">
-        <p role="alert">{error ?? 'Category not found'}</p>
-        <button className="back-link" type="button" onClick={() => navigate('#/')}>
-          ← Back to overview
-        </button>
-      </div>
-    );
-  }
-
-  const heading = category.h1 || category.title;
-  const hasDescription = Array.isArray(category.description) && category.description.length > 0;
-
-  return (
-    <>
-      <header className="category-header">
-        <m.h1
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: 'easeOut' }}
-        >
-          {heading}
-        </m.h1>
-        {hasDescription && (
-          <m.div
-            className="category-description"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
-          >
-            <PortableText value={category.description} />
-          </m.div>
-        )}
-      </header>
-
-      <section className="curation" aria-label={`${heading} portfolios`}>
-        <div className="filter-bar filter-bar--style-only">
-          <StyleFilterBar
-            options={styleOptions}
-            selected={selectedStyles}
-            onChange={setSelectedStyles}
-            isOpen={styleOpen}
-            onToggle={setStyleOpen}
-          />
-        </div>
-
-        {!loading && !error && filteredProjects.length === 0 && (
-          <p className="grid-status">No portfolios in this category yet.</p>
-        )}
-
-        {!loading && !error && filteredProjects.length > 0 && (
-          <PortfolioGrid projects={filteredProjects} />
-        )}
       </section>
     </>
   );
@@ -504,7 +403,7 @@ function DetailPage({ slug }) {
     return (
       <div className="detail-status">
         <p role="alert">{error ?? 'Portfolio not found'}</p>
-        <button className="back-link" onClick={() => navigate('#/')}>
+        <button className="back-link" onClick={() => navigate('/')}>
           ← Back to overview
         </button>
       </div>
@@ -522,7 +421,7 @@ function DetailPage({ slug }) {
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
       <aside className="detail-sidebar">
-        <button className="back-link" onClick={() => navigate('#/')}>
+        <button className="back-link" onClick={() => navigate('/')}>
           ← Overview
         </button>
 
@@ -631,28 +530,142 @@ function DetailPage({ slug }) {
   );
 }
 
+/* ── Category page ────────────────────────────────── */
+
+function CategoryPage({ slug }) {
+  const [category, setCategory]           = useState(null);
+  const [projects, setProjects]           = useState([]);
+  const [styles, setStyles]               = useState([]);
+  const [styleOpen, setStyleOpen]         = useState(false);
+  const [selectedStyles, setSelectedStyles] = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState(null);
+
+  useDocumentTitle(category?.metaTitle);
+
+  const styleOptions = useMemo(
+    () => styles.map(s => s.title).filter(Boolean),
+    [styles],
+  );
+
+  const filteredProjects = useMemo(() => {
+    if (selectedStyles.length === 0) return projects;
+    return projects.filter(p => {
+      const projectStyles = p.styles ?? [];
+      return selectedStyles.some(style => projectStyles.includes(style));
+    });
+  }, [projects, selectedStyles]);
+
+  useEffect(() => {
+    setSelectedStyles([]);
+    setStyleOpen(false);
+  }, [slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setCategory(null);
+    setProjects([]);
+    Promise.all([
+      fetchCategoryBySlug(slug),
+      fetchProjectsByCategorySlug(slug),
+      fetchStyles(),
+    ])
+      .then(([categoryData, projectData, styleData]) => {
+        if (cancelled) return;
+        if (!categoryData) {
+          setError('Category not found');
+          return;
+        }
+        setCategory(categoryData);
+        setProjects(projectData ?? []);
+        setStyles(styleData ?? []);
+      })
+      .catch(err => {
+        if (!cancelled) setError(err.message ?? 'Failed to load category');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [slug]);
+
+  if (loading) {
+    return <p className="detail-status">Loading category…</p>;
+  }
+
+  if (error || !category) {
+    return (
+      <div className="detail-status">
+        <p role="alert">{error ?? 'Category not found'}</p>
+        <button className="back-link" type="button" onClick={() => navigate('/')}>
+          ← Back to overview
+        </button>
+      </div>
+    );
+  }
+
+  const heading = category.h1 || category.title;
+  const hasDescription = Array.isArray(category.description) && category.description.length > 0;
+
+  return (
+    <>
+      <header className="category-header">
+        <m.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+        >
+          {heading}
+        </m.h1>
+        {hasDescription && (
+          <m.div
+            className="category-description"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
+          >
+            <PortableText value={category.description} />
+          </m.div>
+        )}
+      </header>
+
+      <section className="curation" aria-label={`${heading} portfolios`}>
+        <div className="filter-bar filter-bar--style-only">
+          <StyleFilterBar
+            options={styleOptions}
+            selected={selectedStyles}
+            onChange={setSelectedStyles}
+            isOpen={styleOpen}
+            onToggle={setStyleOpen}
+          />
+        </div>
+
+        {filteredProjects.length === 0 && (
+          <p className="grid-status">No portfolios in this category yet.</p>
+        )}
+
+        {filteredProjects.length > 0 && (
+          <PortfolioGrid projects={filteredProjects} />
+        )}
+      </section>
+    </>
+  );
+}
+
 /* ── Root ─────────────────────────────────────────── */
 
 export default function App() {
-  const hash = useHash();
-  const portfolioMatch = hash.match(/#\/portfolio\/([^/?#]+)/);
-  const singleSegmentMatch = hash.match(/^#\/([^/?#]+)\/?$/);
-  const portfolioSlug = portfolioMatch?.[1] ? decodeURIComponent(portfolioMatch[1]) : null;
-  const categorySlug = (() => {
-    if (portfolioSlug || !singleSegmentMatch?.[1]) return null;
-    const segment = decodeURIComponent(singleSegmentMatch[1]);
-    return RESERVED_PATH_SEGMENTS.has(segment) ? null : segment;
-  })();
-
-  let page;
-  if (portfolioSlug) page = <DetailPage slug={portfolioSlug} />;
-  else if (categorySlug) page = <CategoryPage slug={categorySlug} />;
-  else page = <HomePage />;
+  const pathname = usePathname();
+  const route = parsePath(pathname);
 
   return (
     <div className="page">
       <Navbar />
-      {page}
+      {route.page === 'detail' && <DetailPage slug={route.slug} />}
+      {route.page === 'category' && <CategoryPage slug={route.slug} />}
+      {route.page === 'home' && <HomePage />}
     </div>
   );
 }

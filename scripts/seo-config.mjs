@@ -39,7 +39,7 @@ export const FALLBACK_CATEGORIES = [
 ];
 
 export function categoryPath(slug) {
-  return `/category/${slug}`;
+  return `/${slug}`;
 }
 
 export function categoryUrl(slug) {

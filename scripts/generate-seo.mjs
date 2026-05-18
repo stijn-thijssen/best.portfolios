@@ -219,8 +219,8 @@ ${categoryLines}
 
 ## Preferred crawl sections
 - Homepage hero and portfolio directory grid
-- Category listing pages under /category/
-- Public portfolio detail pages (hash routes: /#/portfolio/{slug})
+- Category listing pages at /{category-slug}
+- Public portfolio detail pages at /portfolio/{slug}
 
 ## Do not crawl
 - /studio/ (Sanity CMS admin)

@@ -10,9 +10,10 @@
   --clr-surface:        #f3f4f6;
   --clr-surface-hover:  #e9eaec;
   --clr-card-bg:        #f0f1f3;
-  --clr-primary:        #1a1a1a;
+  --clr-primary:        #000000;
   --clr-primary-text:   #ffffff;
   --clr-primary-hover:  #333333;
+  --clr-brand-highlight:#C32D09;
 
   /* Typography */
   --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -74,8 +75,6 @@ body {
   display: block;
   width: 32px;
   height: 32px;
-  background: var(--clr-primary);
-  border-radius: var(--radius-logo);
   flex-shrink: 0;
 }
 
@@ -117,10 +116,73 @@ body {
 }
 .btn-secondary:hover { background: var(--clr-surface-hover); }
 
+.btn-animated {
+  --btn-animated-bg: var(--clr-primary);
+  --btn-animated-hover-bg: var(--clr-brand-highlight);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: transparent;
+  color: var(--clr-primary-text);
+  border-radius: var(--radius-pill);
+  transition: color 0.2s ease-in-out;
+}
+
+.btn-animated:hover {
+  background: transparent;
+}
+
+.btn-animated-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--btn-animated-bg);
+  transition:
+    inset 0.6s cubic-bezier(0.625, 0.05, 0, 1),
+    background 0.2s cubic-bezier(0.625, 0.05, 0, 1);
+}
+
+.btn-animated:hover .btn-animated-bg {
+  inset: 0.125rem;
+  background: var(--btn-animated-hover-bg);
+}
+
+.btn-animated-text {
+  position: relative;
+  display: inline-flex;
+  overflow: hidden;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.btn-animated-text span {
+  display: inline-block;
+  position: relative;
+  text-shadow: 0 1.3em currentColor;
+  transform: translateY(0) rotate(0.001deg);
+  transition: transform 0.6s cubic-bezier(0.625, 0.05, 0, 1);
+}
+
+.btn-animated:hover .btn-animated-text span {
+  transform: translateY(-1.3em) rotate(0.001deg);
+}
+
 .btn-full {
   width: 100%;
   padding: 0.75rem 1.25rem;
   font-size: var(--text-lg);
+}
+
+.detail-cta {
+  --btn-animated-bg: var(--clr-brand-highlight);
+  --btn-animated-hover-bg: #A62000;
+}
+
+.nav-cta,
+.detail-cta {
+  padding: 12px 16px;
+  font-size: 1rem;
 }
 
 /* ── Hero ── */
@@ -175,8 +237,20 @@ body {
 
 .signup-form {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: nowrap;
+  gap: 0;
   max-width: 400px;
+}
+
+.signup-submit {
+  align-self: stretch;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  flex-grow: 0;
+  flex-basis: auto;
+  width: calc(0.5625rem * 2 + 1em * 1.4);
+  font-size: 1rem;
 }
 
 .email-input {
@@ -608,6 +682,7 @@ body {
 
 @media (max-width: 640px) {
   .navbar { padding: 0 var(--page-px-sm); }
+  .logo-text { display: none; }
 
   .hero {
     grid-template-columns: 1fr;
@@ -626,10 +701,14 @@ body {
 
   .signup-form {
     flex-direction: column;
+    gap: 0.5rem;
     max-width: 100%;
   }
-  .signup-form .btn {
+
+  .signup-submit {
+    align-self: stretch;
     width: 100%;
+    padding: 0.75rem 1.25rem;
   }
 
   .curation {

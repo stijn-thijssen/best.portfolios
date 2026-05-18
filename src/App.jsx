@@ -24,14 +24,38 @@ function navigate(path) {
 
 /* ── Shared components ────────────────────────────── */
 
+const NAV_CTA_LABEL = 'Get inspired →';
+const NAV_CTA_CHAR_DELAY = 0.01;
+
+function AnimatedButtonText({ text, className = 'btn-animated-text' }) {
+  return (
+    <span data-button-animate-chars="" className={className} aria-hidden="true">
+      {[...text].map((char, index) => (
+        <span
+          key={`${char}-${index}`}
+          style={{
+            transitionDelay: `${index * NAV_CTA_CHAR_DELAY}s`,
+            whiteSpace: char === ' ' ? 'pre' : undefined,
+          }}
+        >
+          {char}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function Navbar() {
   return (
     <nav className="navbar">
       <button className="nav-logo" onClick={() => navigate('#/')}>
-        <span className="logo-icon" aria-hidden="true" />
+        <img src="/logo.svg" alt="" aria-hidden="true" className="logo-icon" />
         <span className="logo-text">Best Portfolio Websites</span>
       </button>
-      <a href="#signup" className="btn btn-secondary">Get inspired →</a>
+      <a href="#signup" className="btn btn-primary btn-animated nav-cta" aria-label={NAV_CTA_LABEL}>
+        <span className="btn-animated-bg" aria-hidden="true" />
+        <AnimatedButtonText text={NAV_CTA_LABEL} />
+      </a>
     </nav>
   );
 }
@@ -194,7 +218,10 @@ function HomePage() {
               className="email-input"
               aria-label="Email address"
             />
-            <button type="submit" className="btn btn-primary">Get inspired →</button>
+            <button type="submit" className="btn btn-primary btn-animated signup-submit" aria-label="Get inspired">
+              <span className="btn-animated-bg" aria-hidden="true" />
+              <AnimatedButtonText text="→" />
+            </button>
           </form>
         </div>
         <div className="hero-image">
@@ -393,11 +420,13 @@ function DetailPage({ slug }) {
         {portfolio.portfolioLink && (
           <a
             href={portfolio.portfolioLink}
-            className="btn btn-primary btn-full"
+            className="btn btn-primary btn-full btn-animated detail-cta"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="View portfolio"
           >
-            View portfolio ↗
+            <span className="btn-animated-bg" aria-hidden="true" />
+            <AnimatedButtonText text="View portfolio ↗" />
           </a>
         )}
       </aside>

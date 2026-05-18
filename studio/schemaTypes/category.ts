@@ -12,6 +12,12 @@ export default defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: 'metaTitle',
+      title: 'Meta Title',
+      type: 'string',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
@@ -20,6 +26,11 @@ export default defineType({
         maxLength: 96,
       },
       validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'h1',
+      title: 'H1',
+      type: 'string',
     }),
     defineField({
       name: 'description',

@@ -3,23 +3,50 @@ import { m } from 'framer-motion';
 import { PortableText } from '@portabletext/react';
 import heroImage from './assets/header-image.png';
 import { urlFor } from './lib/sanity';
-import { fetchProjects, fetchStyles, fetchProjectBySlug } from './lib/queries';
+import {
+  fetchProjects,
+  fetchStyles,
+  fetchProjectBySlug,
+  fetchCategoryBySlug,
+  fetchProjectsByCategorySlug,
+} from './lib/queries';
 
-/* ── Hash router ──────────────────────────────────── */
+/* ── History router ───────────────────────────────── */
 
-function useHash() {
-  const [hash, setHash] = useState(window.location.hash || '#/');
+const RESERVED_SEGMENTS = new Set(['portfolio', 'studio']);
+
+function parsePath(pathname) {
+  const path = pathname.replace(/\/+$/, '') || '/';
+  if (path === '/') return { page: 'home' };
+
+  const segments = path.split('/').filter(Boolean);
+  if (segments[0] === 'portfolio' && segments[1]) {
+    return { page: 'detail', slug: decodeURIComponent(segments[1]) };
+  }
+  if (segments.length === 1 && !RESERVED_SEGMENTS.has(segments[0])) {
+    return { page: 'category', slug: decodeURIComponent(segments[0]) };
+  }
+
+  return { page: 'home' };
+}
+
+function usePathname() {
+  const [pathname, setPathname] = useState(() => window.location.pathname);
   useEffect(() => {
-    const fn = () => setHash(window.location.hash || '#/');
-    window.addEventListener('hashchange', fn);
-    return () => window.removeEventListener('hashchange', fn);
+    const sync = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', sync);
+    return () => window.removeEventListener('popstate', sync);
   }, []);
-  return hash;
+  return pathname;
 }
 
 function navigate(path) {
   window.scrollTo(0, 0);
-  window.location.hash = path;
+  const target = path.startsWith('/') ? path : `/${path}`;
+  if (window.location.pathname !== target) {
+    window.history.pushState(null, '', target);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
 }
 
 /* ── Shared components ────────────────────────────── */
@@ -45,17 +72,28 @@ function AnimatedButtonText({ text, className = 'btn-animated-text' }) {
   );
 }
 
+function InspireCta({ className = 'nav-cta', id }) {
+  return (
+    <a
+      href="#signup"
+      id={id}
+      className={`btn btn-primary btn-animated ${className}`.trim()}
+      aria-label={NAV_CTA_LABEL}
+    >
+      <span className="btn-animated-bg" aria-hidden="true" />
+      <AnimatedButtonText text={NAV_CTA_LABEL} />
+    </a>
+  );
+}
+
 function Navbar() {
   return (
     <nav className="navbar">
-      <button className="nav-logo" onClick={() => navigate('#/')}>
+      <button className="nav-logo" onClick={() => navigate('/')}>
         <img src="/logo.svg" alt="" aria-hidden="true" className="logo-icon" />
         <span className="logo-text">Best Portfolio Websites</span>
       </button>
-      <a href="#signup" className="btn btn-primary btn-animated nav-cta" aria-label={NAV_CTA_LABEL}>
-        <span className="btn-animated-bg" aria-hidden="true" />
-        <AnimatedButtonText text={NAV_CTA_LABEL} />
-      </a>
+      <InspireCta />
     </nav>
   );
 }
@@ -201,7 +239,7 @@ function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: 'easeOut' }}
           >
-            The best design portfolio websites in one place
+            Best portfolio websites for designers &amp; creatives
           </m.h1>
           <m.p
             className="hero-sub"
@@ -209,25 +247,9 @@ function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
           >
-            Discover curated design portfolio websites. Create your portfolio website with top-notch web design inspiration.
+            Discover curated portfolio websites from leading designers, creatives, and digital studios.
           </m.p>
-          <form
-            id="signup"
-            className="signup-form"
-            onSubmit={e => e.preventDefault()}
-            aria-label="Email signup"
-          >
-            <input
-              type="email"
-              placeholder="johndoe@gmail.com"
-              className="email-input"
-              aria-label="Email address"
-            />
-            <button type="submit" className="btn btn-primary btn-animated signup-submit" aria-label="Get inspired">
-              <span className="btn-animated-bg" aria-hidden="true" />
-              <AnimatedButtonText text="→" />
-            </button>
-          </form>
+          <InspireCta id="signup" className="nav-cta hero-cta" />
         </div>
         <div className="hero-image">
           <img src={heroImage} alt="Portfolio design inspiration" />
@@ -288,10 +310,10 @@ function HomePage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: i * 0.05, ease: 'easeOut' }}
-                onClick={() => p.slug && navigate(`#/portfolio/${p.slug}`)}
+                onClick={() => p.slug && navigate(`/portfolio/${p.slug}`)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={e => e.key === 'Enter' && p.slug && navigate(`#/portfolio/${p.slug}`)}
+                onKeyDown={e => e.key === 'Enter' && p.slug && navigate(`/portfolio/${p.slug}`)}
                 aria-label={`View ${p.portfolioName}`}
               >
                 <div className="card-image" aria-hidden="true">
@@ -345,7 +367,7 @@ function DetailPage({ slug }) {
     return (
       <div className="detail-status">
         <p role="alert">{error ?? 'Portfolio not found'}</p>
-        <button className="back-link" onClick={() => navigate('#/')}>
+        <button className="back-link" onClick={() => navigate('/')}>
           ← Back to overview
         </button>
       </div>
@@ -363,7 +385,7 @@ function DetailPage({ slug }) {
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
       <aside className="detail-sidebar">
-        <button className="back-link" onClick={() => navigate('#/')}>
+        <button className="back-link" onClick={() => navigate('/')}>
           ← Overview
         </button>
 
@@ -472,17 +494,109 @@ function DetailPage({ slug }) {
   );
 }
 
+/* ── Category page ────────────────────────────────── */
+
+function CategoryPage({ slug }) {
+  const [category, setCategory] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setCategory(null);
+    setProjects([]);
+    Promise.all([fetchCategoryBySlug(slug), fetchProjectsByCategorySlug(slug)])
+      .then(([categoryData, projectData]) => {
+        if (cancelled) return;
+        if (!categoryData) {
+          setError('Category not found');
+          return;
+        }
+        setCategory(categoryData);
+        setProjects(projectData ?? []);
+      })
+      .catch(err => {
+        if (!cancelled) setError(err.message ?? 'Failed to load category');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [slug]);
+
+  const heading = category?.h1 || category?.title;
+  const hasDescription = Array.isArray(category?.description) && category.description.length > 0;
+
+  return (
+    <section className="curation category-page" aria-label={heading ?? 'Category'}>
+      <button className="back-link" onClick={() => navigate('/')}>
+        ← Overview
+      </button>
+
+      {loading && <p className="grid-status">Loading category…</p>}
+      {error && <p className="grid-status grid-status--error" role="alert">{error}</p>}
+
+      {!loading && !error && category && (
+        <>
+          {heading && <h1 className="category-title">{heading}</h1>}
+          {hasDescription && (
+            <m.div
+              className="category-description"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+            >
+              <PortableText value={category.description} />
+            </m.div>
+          )}
+
+          <div className="portfolio-grid">
+            {projects.map((p, i) => {
+              const thumbnailUrl = urlFor(p.thumbnail);
+              return (
+                <m.article
+                  key={p._id}
+                  className="portfolio-card"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.05, ease: 'easeOut' }}
+                  onClick={() => p.slug && navigate(`/portfolio/${p.slug}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => e.key === 'Enter' && p.slug && navigate(`/portfolio/${p.slug}`)}
+                  aria-label={`View ${p.portfolioName}`}
+                >
+                  <div className="card-image" aria-hidden="true">
+                    {thumbnailUrl && (
+                      <img src={thumbnailUrl} alt="" loading="lazy" />
+                    )}
+                  </div>
+                  <p className="card-author">{p.portfolioName}</p>
+                </m.article>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 /* ── Root ─────────────────────────────────────────── */
 
 export default function App() {
-  const hash = useHash();
-  const match = hash.match(/#\/portfolio\/([^/?#]+)/);
-  const slug = match?.[1] ? decodeURIComponent(match[1]) : null;
+  const pathname = usePathname();
+  const route = parsePath(pathname);
 
   return (
     <div className="page">
       <Navbar />
-      {slug ? <DetailPage slug={slug} /> : <HomePage />}
+      {route.page === 'detail' && <DetailPage slug={route.slug} />}
+      {route.page === 'category' && <CategoryPage slug={route.slug} />}
+      {route.page === 'home' && <HomePage />}
     </div>
   );
 }

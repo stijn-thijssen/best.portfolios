@@ -23,7 +23,24 @@ export const projectsQuery = `*[_type == "project"] | order(portfolioName asc) {
 }`;
 
 export const categoriesQuery = `*[_type == "category"] | order(title asc) {
-  title
+  title,
+  "slug": slug.current
+}`;
+
+export const categoryBySlugQuery = `*[_type == "category" && slug.current == $slug][0] {
+  title,
+  "slug": slug.current,
+  h1,
+  metaTitle,
+  description
+}`;
+
+export const projectsByCategorySlugQuery = `*[_type == "project" && category->slug.current == $slug] | order(portfolioName asc) {
+  _id,
+  portfolioName,
+  "slug": slug.current,
+  thumbnail,
+  "styles": portfolioType[]->title
 }`;
 
 export const stylesQuery = `*[_type == "portfolioType"] | order(title asc) {
@@ -48,4 +65,12 @@ export async function fetchStyles() {
 
 export async function fetchProjectBySlug(slug) {
   return sanityClient.fetch(projectBySlugQuery, { slug });
+}
+
+export async function fetchCategoryBySlug(slug) {
+  return sanityClient.fetch(categoryBySlugQuery, { slug });
+}
+
+export async function fetchProjectsByCategorySlug(slug) {
+  return sanityClient.fetch(projectsByCategorySlugQuery, { slug });
 }

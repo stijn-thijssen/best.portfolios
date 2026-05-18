@@ -3,7 +3,7 @@ import { m } from 'framer-motion';
 import { PortableText } from '@portabletext/react';
 import heroImage from './assets/header-image.png';
 import { urlFor } from './lib/sanity';
-import { fetchProjects, fetchCategories, fetchStyles, fetchProjectBySlug } from './lib/queries';
+import { fetchProjects, fetchStyles, fetchProjectBySlug } from './lib/queries';
 
 /* ── Hash router ──────────────────────────────────── */
 
@@ -137,7 +137,6 @@ function HomePage() {
   const [styleOpen, setStyleOpen]         = useState(false);
   const [selectedStyles, setSelectedStyles] = useState([]);
   const [projects, setProjects]           = useState([]);
-  const [categories, setCategories]       = useState([]);
   const [styles, setStyles]               = useState([]);
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
@@ -147,10 +146,17 @@ function HomePage() {
     [styles],
   );
 
-  const tabs = useMemo(
-    () => ['All', ...categories.map(c => c.title).filter(Boolean)],
-    [categories],
-  );
+  const tabs = useMemo(() => {
+    const used = [...new Set(projects.map(p => p.category).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b));
+    return ['All', ...used];
+  }, [projects]);
+
+  useEffect(() => {
+    if (activeTab !== 'All' && !tabs.includes(activeTab)) {
+      setActiveTab('All');
+    }
+  }, [tabs, activeTab]);
 
   const filteredProjects = useMemo(() => {
     let result = projects;
@@ -170,11 +176,10 @@ function HomePage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    Promise.all([fetchProjects(), fetchCategories(), fetchStyles()])
-      .then(([projectData, categoryData, styleData]) => {
+    Promise.all([fetchProjects(), fetchStyles()])
+      .then(([projectData, styleData]) => {
         if (!cancelled) {
           setProjects(projectData ?? []);
-          setCategories(categoryData ?? []);
           setStyles(styleData ?? []);
         }
       })
@@ -244,14 +249,29 @@ function HomePage() {
               </button>
             ))}
           </div>
-          <div className="dropdowns">
-            <StyleFilterDropdown
-              options={styleOptions}
-              selected={selectedStyles}
-              onChange={setSelectedStyles}
-              isOpen={styleOpen}
-              onToggle={setStyleOpen}
-            />
+          <div className="filter-bar-style">
+            <span className="filter-bar-divider" aria-hidden="true" />
+            <div className="dropdowns">
+              <StyleFilterDropdown
+                options={styleOptions}
+                selected={selectedStyles}
+                onChange={setSelectedStyles}
+                isOpen={styleOpen}
+                onToggle={setStyleOpen}
+              />
+              {selectedStyles.length > 0 && (
+                <button
+                  type="button"
+                  className="filter-clear"
+                  onClick={() => {
+                    setSelectedStyles([]);
+                    setStyleOpen(false);
+                  }}
+                >
+                  Remove filters
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

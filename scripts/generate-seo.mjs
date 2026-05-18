@@ -1,6 +1,6 @@
 import { createClient } from '@sanity/client';
 import { encode as encodeJpeg } from 'jpeg-js';
-import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
@@ -137,10 +137,13 @@ function writeMinimalPng(filePath, width, height, color) {
 function generateRasterAssets() {
   mkdirSync(publicDir, { recursive: true });
 
-  writeJpeg(join(publicDir, 'og-image.jpg'), 1200, 630, (data, w, h) => {
-    fillSolid(data, w, h, BRAND_BG);
-    drawOgAccent(data, w, h);
-  });
+  const ogPath = join(publicDir, 'og-image.jpg');
+  if (!existsSync(ogPath)) {
+    writeJpeg(ogPath, 1200, 630, (data, w, h) => {
+      fillSolid(data, w, h, BRAND_BG);
+      drawOgAccent(data, w, h);
+    });
+  }
 
   for (const { name, size } of [
     { name: 'favicon-16x16.png', size: 16 },
@@ -264,12 +267,14 @@ function writeWebManifest() {
 async function main() {
   const categories = await fetchCategories();
   mkdirSync(publicDir, { recursive: true });
+  const hadCustomOg = existsSync(join(publicDir, 'og-image.jpg'));
   generateRasterAssets();
   writeSitemap(categories);
   writeLlmsTxt(categories);
   writeWebManifest();
+  const ogNote = hadCustomOg ? 'kept custom og-image.jpg' : 'og-image.jpg';
   console.log(
-    `[generate-seo] Wrote sitemap (${categories.length + 1} URLs), llms.txt, icons, og-image.jpg`,
+    `[generate-seo] Wrote sitemap (${categories.length + 1} URLs), llms.txt, icons, ${ogNote}`,
   );
 }
 

@@ -271,6 +271,37 @@ body {
 .email-input:focus        { border-color: var(--clr-primary); }
 .email-input::placeholder { color: #adb5bd; }
 
+/* ── Category page header ── */
+.category-header {
+  max-width: var(--page-max-w);
+  margin-inline: auto;
+  padding: 2rem var(--page-px) 0.5rem;
+}
+
+.category-header h1 {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  max-width: 48ch;
+}
+
+.category-description {
+  margin-top: 0.875rem;
+  font-size: var(--text-base);
+  color: var(--clr-text-muted);
+  line-height: 1.65;
+  max-width: 62ch;
+}
+
+.category-description p + p {
+  margin-top: 0.75em;
+}
+
+.filter-bar--style-only {
+  justify-content: flex-start;
+}
+
 /* ── Curation section ── */
 .curation {
   padding: 1.5rem var(--page-px) 5rem;
@@ -762,6 +793,10 @@ body {
 
   .curation {
     padding: 1.25rem var(--page-px-sm) 3rem;
+  }
+
+  .category-header {
+    padding: 1.5rem var(--page-px-sm) 0.25rem;
   }
 
   .filter-bar { gap: 0.75rem; }

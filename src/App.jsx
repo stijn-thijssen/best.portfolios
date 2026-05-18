@@ -3,9 +3,17 @@ import { m } from 'framer-motion';
 import { PortableText } from '@portabletext/react';
 import heroImage from './assets/header-image.png';
 import { urlFor } from './lib/sanity';
-import { fetchProjects, fetchStyles, fetchProjectBySlug } from './lib/queries';
+import {
+  fetchProjects,
+  fetchStyles,
+  fetchProjectBySlug,
+  fetchCategoryBySlug,
+  fetchProjectsByCategorySlug,
+} from './lib/queries';
 
 /* ── Hash router ──────────────────────────────────── */
+
+const RESERVED_PATH_SEGMENTS = new Set(['portfolio']);
 
 function useHash() {
   const [hash, setHash] = useState(window.location.hash || '#/');
@@ -20,6 +28,15 @@ function useHash() {
 function navigate(path) {
   window.scrollTo(0, 0);
   window.location.hash = path;
+}
+
+function useDocumentTitle(title) {
+  useEffect(() => {
+    if (!title) return undefined;
+    const previous = document.title;
+    document.title = title;
+    return () => { document.title = previous; };
+  }, [title]);
 }
 
 /* ── Shared components ────────────────────────────── */
@@ -126,6 +143,65 @@ function StyleFilterDropdown({ options, selected, onChange, isOpen, onToggle }) 
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function StyleFilterBar({ options, selected, onChange, isOpen, onToggle }) {
+  return (
+    <div className="filter-bar-style">
+      <div className="dropdowns">
+        <StyleFilterDropdown
+          options={options}
+          selected={selected}
+          onChange={onChange}
+          isOpen={isOpen}
+          onToggle={onToggle}
+        />
+        {selected.length > 0 && (
+          <button
+            type="button"
+            className="filter-clear"
+            onClick={() => {
+              onChange([]);
+              onToggle(false);
+            }}
+          >
+            Remove filters
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PortfolioGrid({ projects }) {
+  return (
+    <div className="portfolio-grid">
+      {projects.map((p, i) => {
+        const thumbnailUrl = urlFor(p.thumbnail);
+        return (
+          <m.article
+            key={p._id}
+            className="portfolio-card"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: i * 0.05, ease: 'easeOut' }}
+            onClick={() => p.slug && navigate(`#/portfolio/${p.slug}`)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => e.key === 'Enter' && p.slug && navigate(`#/portfolio/${p.slug}`)}
+            aria-label={`View ${p.portfolioName}`}
+          >
+            <div className="card-image" aria-hidden="true">
+              {thumbnailUrl && (
+                <img src={thumbnailUrl} alt="" loading="lazy" />
+              )}
+            </div>
+            <p className="card-author">{p.portfolioName}</p>
+          </m.article>
+        );
+      })}
     </div>
   );
 }
@@ -249,61 +325,144 @@ function HomePage() {
               </button>
             ))}
           </div>
-          <div className="filter-bar-style">
-            <span className="filter-bar-divider" aria-hidden="true" />
-            <div className="dropdowns">
-              <StyleFilterDropdown
-                options={styleOptions}
-                selected={selectedStyles}
-                onChange={setSelectedStyles}
-                isOpen={styleOpen}
-                onToggle={setStyleOpen}
-              />
-              {selectedStyles.length > 0 && (
-                <button
-                  type="button"
-                  className="filter-clear"
-                  onClick={() => {
-                    setSelectedStyles([]);
-                    setStyleOpen(false);
-                  }}
-                >
-                  Remove filters
-                </button>
-              )}
-            </div>
-          </div>
+          <span className="filter-bar-divider" aria-hidden="true" />
+          <StyleFilterBar
+            options={styleOptions}
+            selected={selectedStyles}
+            onChange={setSelectedStyles}
+            isOpen={styleOpen}
+            onToggle={setStyleOpen}
+          />
         </div>
 
         {error && <p className="grid-status grid-status--error" role="alert">{error}</p>}
         {loading && !error && <p className="grid-status">Loading portfolios…</p>}
 
-        <div className="portfolio-grid">
-          {filteredProjects.map((p, i) => {
-            const thumbnailUrl = urlFor(p.thumbnail);
-            return (
-              <m.article
-                key={p._id}
-                className="portfolio-card"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.05, ease: 'easeOut' }}
-                onClick={() => p.slug && navigate(`#/portfolio/${p.slug}`)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={e => e.key === 'Enter' && p.slug && navigate(`#/portfolio/${p.slug}`)}
-                aria-label={`View ${p.portfolioName}`}
-              >
-                <div className="card-image" aria-hidden="true">
-                  {thumbnailUrl && (
-                    <img src={thumbnailUrl} alt="" loading="lazy" />
-                  )}
-                </div>
-                <p className="card-author">{p.portfolioName}</p>
-              </m.article>
-            );
-          })}
+        {!loading && !error && <PortfolioGrid projects={filteredProjects} />}
+      </section>
+    </>
+  );
+}
+
+/* ── Category page ────────────────────────────────── */
+
+function CategoryPage({ slug }) {
+  const [category, setCategory]           = useState(null);
+  const [projects, setProjects]           = useState([]);
+  const [styles, setStyles]               = useState([]);
+  const [styleOpen, setStyleOpen]         = useState(false);
+  const [selectedStyles, setSelectedStyles] = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState(null);
+
+  useDocumentTitle(category?.metaTitle);
+
+  const styleOptions = useMemo(
+    () => styles.map(s => s.title).filter(Boolean),
+    [styles],
+  );
+
+  const filteredProjects = useMemo(() => {
+    if (selectedStyles.length === 0) return projects;
+    return projects.filter(p => {
+      const projectStyles = p.styles ?? [];
+      return selectedStyles.some(style => projectStyles.includes(style));
+    });
+  }, [projects, selectedStyles]);
+
+  useEffect(() => {
+    setSelectedStyles([]);
+    setStyleOpen(false);
+  }, [slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setCategory(null);
+    setProjects([]);
+    Promise.all([
+      fetchCategoryBySlug(slug),
+      fetchProjectsByCategorySlug(slug),
+      fetchStyles(),
+    ])
+      .then(([categoryData, projectData, styleData]) => {
+        if (cancelled) return;
+        if (!categoryData) {
+          setError('Category not found');
+          return;
+        }
+        setCategory(categoryData);
+        setProjects(projectData ?? []);
+        setStyles(styleData ?? []);
+      })
+      .catch(err => {
+        if (!cancelled) setError(err.message ?? 'Failed to load category');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [slug]);
+
+  if (loading) {
+    return <p className="detail-status">Loading category…</p>;
+  }
+
+  if (error || !category) {
+    return (
+      <div className="detail-status">
+        <p role="alert">{error ?? 'Category not found'}</p>
+        <button className="back-link" type="button" onClick={() => navigate('#/')}>
+          ← Back to overview
+        </button>
+      </div>
+    );
+  }
+
+  const heading = category.h1 || category.title;
+  const hasDescription = Array.isArray(category.description) && category.description.length > 0;
+
+  return (
+    <>
+      <header className="category-header">
+        <m.h1
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+        >
+          {heading}
+        </m.h1>
+        {hasDescription && (
+          <m.div
+            className="category-description"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
+          >
+            <PortableText value={category.description} />
+          </m.div>
+        )}
+      </header>
+
+      <section className="curation" aria-label={`${heading} portfolios`}>
+        <div className="filter-bar filter-bar--style-only">
+          <StyleFilterBar
+            options={styleOptions}
+            selected={selectedStyles}
+            onChange={setSelectedStyles}
+            isOpen={styleOpen}
+            onToggle={setStyleOpen}
+          />
         </div>
+
+        {!loading && !error && filteredProjects.length === 0 && (
+          <p className="grid-status">No portfolios in this category yet.</p>
+        )}
+
+        {!loading && !error && filteredProjects.length > 0 && (
+          <PortfolioGrid projects={filteredProjects} />
+        )}
       </section>
     </>
   );
@@ -476,13 +635,24 @@ function DetailPage({ slug }) {
 
 export default function App() {
   const hash = useHash();
-  const match = hash.match(/#\/portfolio\/([^/?#]+)/);
-  const slug = match?.[1] ? decodeURIComponent(match[1]) : null;
+  const portfolioMatch = hash.match(/#\/portfolio\/([^/?#]+)/);
+  const singleSegmentMatch = hash.match(/^#\/([^/?#]+)\/?$/);
+  const portfolioSlug = portfolioMatch?.[1] ? decodeURIComponent(portfolioMatch[1]) : null;
+  const categorySlug = (() => {
+    if (portfolioSlug || !singleSegmentMatch?.[1]) return null;
+    const segment = decodeURIComponent(singleSegmentMatch[1]);
+    return RESERVED_PATH_SEGMENTS.has(segment) ? null : segment;
+  })();
+
+  let page;
+  if (portfolioSlug) page = <DetailPage slug={portfolioSlug} />;
+  else if (categorySlug) page = <CategoryPage slug={categorySlug} />;
+  else page = <HomePage />;
 
   return (
     <div className="page">
       <Navbar />
-      {slug ? <DetailPage slug={slug} /> : <HomePage />}
+      {page}
     </div>
   );
 }

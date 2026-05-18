@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { CaretDown, ArrowLeft, ArrowRight, ArrowUpRight } from '@phosphor-icons/react';
 import { m } from 'framer-motion';
 import { PortableText } from '@portabletext/react';
 import heroImage from './assets/header-image.png';
@@ -6,6 +7,7 @@ import { urlFor } from './lib/sanity';
 import {
   fetchProjects,
   fetchStyles,
+  fetchCategories,
   fetchProjectBySlug,
   fetchCategoryBySlug,
   fetchProjectsByCategorySlug,
@@ -60,7 +62,25 @@ function useDocumentTitle(title) {
 
 /* ── Shared components ────────────────────────────── */
 
-const NAV_CTA_LABEL = 'Get inspired →';
+function CheckboxBox({ checked }) {
+  return (
+    <span className="dropdown-checkbox" aria-hidden="true">
+      {checked && (
+        <svg className="dropdown-checkbox-icon" viewBox="0 0 12 12" fill="none">
+          <path
+            d="M2.5 6.25L5 8.75L9.5 3.75"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+const NAV_CTA_LABEL = 'Get inspired';
 const NAV_CTA_CHAR_DELAY = 0.01;
 
 function AnimatedButtonText({ text, className = 'btn-animated-text' }) {
@@ -91,6 +111,7 @@ function InspireCta({ className = 'nav-cta', id }) {
     >
       <span className="btn-animated-bg" aria-hidden="true" />
       <AnimatedButtonText text={NAV_CTA_LABEL} />
+      <ArrowRight weight="bold" aria-hidden="true" />
     </a>
   );
 }
@@ -142,7 +163,7 @@ function StyleFilterDropdown({ options, selected, onChange, isOpen, onToggle }) 
         aria-haspopup="true"
       >
         {(selected.length > 0 ? `Style (${selected.length})` : 'Style')}{' '}
-        <span className="chevron" aria-hidden="true">▾</span>
+        <CaretDown className="chevron" weight="bold" aria-hidden="true" />
       </button>
       {isOpen && (
         <div className={`dropdown-menu dropdown-menu--${menuAlign}`} ref={menuRef} role="menu" aria-label="Filter by style">
@@ -166,19 +187,7 @@ function StyleFilterDropdown({ options, selected, onChange, isOpen, onToggle }) 
                     );
                   }}
                 >
-                  <span className="dropdown-checkbox" aria-hidden="true">
-                    {isChecked && (
-                      <svg className="dropdown-checkbox-icon" viewBox="0 0 12 12" fill="none">
-                        <path
-                          d="M2.5 6.25L5 8.75L9.5 3.75"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                  </span>
+                  <CheckboxBox checked={isChecked} />
                   <span className="dropdown-item-label">{style}</span>
                 </button>
               );
@@ -408,7 +417,7 @@ function DetailPage({ slug }) {
       <div className="detail-status">
         <p role="alert">{error ?? 'Portfolio not found'}</p>
         <button className="back-link" onClick={() => navigate('/')}>
-          ← Back to overview
+          <ArrowLeft weight="bold" aria-hidden="true" /> <span className="back-link-label">Back to overview</span>
         </button>
       </div>
     );
@@ -426,7 +435,7 @@ function DetailPage({ slug }) {
     >
       <aside className="detail-sidebar">
         <button className="back-link" onClick={() => navigate('/')}>
-          ← Overview
+          <ArrowLeft weight="bold" aria-hidden="true" /> <span className="back-link-label">Overview</span>
         </button>
 
         {portfolio.portfolioName && (
@@ -508,7 +517,8 @@ function DetailPage({ slug }) {
             aria-label="View portfolio"
           >
             <span className="btn-animated-bg" aria-hidden="true" />
-            <AnimatedButtonText text="View portfolio ↗" />
+            <AnimatedButtonText text="View portfolio" />
+            <ArrowUpRight weight="bold" aria-hidden="true" />
           </a>
         )}
       </aside>
@@ -604,7 +614,7 @@ function CategoryPage({ slug }) {
       <div className="detail-status">
         <p role="alert">{error ?? 'Category not found'}</p>
         <button className="back-link" type="button" onClick={() => navigate('/')}>
-          ← Back to overview
+          <ArrowLeft weight="bold" aria-hidden="true" /> <span className="back-link-label">Back to overview</span>
         </button>
       </div>
     );
@@ -638,7 +648,7 @@ function CategoryPage({ slug }) {
       <section className="curation" aria-label={`${heading} portfolios`}>
         <div className="filter-bar filter-bar--style-only">
           <button className="back-link" type="button" onClick={() => navigate('/')}>
-            ← All categories
+            <ArrowLeft weight="bold" aria-hidden="true" /> <span className="back-link-label">All categories</span>
           </button>
           <span className="filter-bar-divider" aria-hidden="true" />
           <StyleFilterBar
@@ -662,6 +672,164 @@ function CategoryPage({ slug }) {
   );
 }
 
+/* ── Footer ───────────────────────────────────────── */
+
+const FOOTER_EXPLORE_LINKS = [
+  { label: 'Portfolio inspiration', href: '/' },
+  { label: 'Portfolio examples', href: '/' },
+  { label: 'Creative portfolios', href: '/' },
+  { label: 'Interactive websites', href: '/' },
+];
+
+const FOOTER_RESOURCE_LINKS = [
+  { label: 'How to build a portfolio', href: '#' },
+  { label: 'Design trends', href: '#' },
+  { label: 'Submit Portfolio', href: '#' },
+  { label: 'About', href: '#' },
+];
+
+function FooterLinkColumn({ title, links }) {
+  return (
+    <div className="footer-col">
+      <p className="footer-col-title">{title}</p>
+      <ul className="footer-col-list">
+        {links.map(link => (
+          <li key={link.label}>
+            {link.href.startsWith('/') && link.href.length > 1 ? (
+              <button
+                type="button"
+                className="footer-link"
+                onClick={() => navigate(link.href.slice(1))}
+              >
+                {link.label}
+              </button>
+            ) : (
+              <a className="footer-link" href={link.href}>
+                {link.label}
+              </a>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Footer() {
+  const [categories, setCategories] = useState([]);
+  const [email, setEmail] = useState('');
+  const [consent, setConsent] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchCategories()
+      .then(data => {
+        if (!cancelled) setCategories(data ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setCategories([]);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const categoryLinks = useMemo(
+    () => categories.map(c => ({
+      label: c.title,
+      href: `/${c.slug}`,
+    })),
+    [categories],
+  );
+
+  function handleNewsletterSubmit(e) {
+    e.preventDefault();
+    if (!email.trim() || !consent) return;
+    setEmail('');
+    setConsent(false);
+  }
+
+  return (
+    <footer className="site-footer">
+      <div className="footer-main">
+        <section className="footer-newsletter" id="signup" aria-labelledby="footer-newsletter-heading">
+          <div className="footer-newsletter-content">
+            <h2 id="footer-newsletter-heading" className="footer-newsletter-heading">
+              Sign up for weekly design portfolio inspiration
+            </h2>
+
+            <form className="footer-signup" onSubmit={handleNewsletterSubmit} noValidate>
+              <div className="signup-form footer-signup-field">
+                <label className="visually-hidden" htmlFor="footer-email">Email address</label>
+                <input
+                  id="footer-email"
+                  type="email"
+                  name="email"
+                  className="email-input"
+                  placeholder="Johndoe@gmail.com"
+                  autoComplete="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                />
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-animated signup-submit footer-signup-submit"
+                  aria-label="Subscribe to newsletter"
+                >
+                  <span className="btn-animated-bg" aria-hidden="true" />
+                  <ArrowRight weight="bold" aria-hidden="true" />
+                </button>
+              </div>
+
+              <label className={`footer-consent${consent ? ' footer-consent--checked' : ''}`}>
+                <input
+                  id="footer-consent"
+                  type="checkbox"
+                  className="visually-hidden"
+                  checked={consent}
+                  onChange={e => setConsent(e.target.checked)}
+                  required
+                />
+                <CheckboxBox checked={consent} />
+                <span className="footer-consent-label">
+                  I agree to receive marketing mails. By signing up, you agree to our{' '}
+                  <a
+                    href="#"
+                    className="footer-inline-link"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    Privacy Policy
+                  </a>. Subscribe anytime.
+                </span>
+              </label>
+            </form>
+          </div>
+        </section>
+
+        <nav className="footer-index" aria-label="Site">
+          <div className="footer-columns">
+            <FooterLinkColumn title="Categories" links={categoryLinks} />
+            <FooterLinkColumn title="Explore" links={FOOTER_EXPLORE_LINKS} />
+            <FooterLinkColumn title="Resources" links={FOOTER_RESOURCE_LINKS} />
+          </div>
+        </nav>
+      </div>
+
+      <div className="footer-bottom">
+        <div className="footer-bottom-inner">
+          <div className="footer-newsletter-brand">
+            <img src="/footer-logo.svg" alt="" className="footer-brand-icon" width={24} height={24} />
+            <p className="footer-brand-name">Best portfolio websites</p>
+          </div>
+          <div className="footer-legal">
+            <a href="#" className="footer-legal-link">Terms of service</a>
+            <a href="#" className="footer-legal-link">Privacy policy</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 /* ── Root ─────────────────────────────────────────── */
 
 export default function App() {
@@ -674,6 +842,7 @@ export default function App() {
       {route.page === 'detail' && <DetailPage slug={route.slug} />}
       {route.page === 'category' && <CategoryPage slug={route.slug} />}
       {route.page === 'home' && <HomePage />}
+      <Footer />
     </div>
   );
 }

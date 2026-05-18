@@ -9,10 +9,10 @@ Best Portfolio Websites is a curated directory of standout design portfolio webs
 
 ## Main categories
 - Homepage: https://bestportfoliowebsites.com/
-- Brand Design Portfolios: https://bestportfoliowebsites.com/brand-design-portfolios
-- Motion & 3D Portfolios: https://bestportfoliowebsites.com/motion-and-3d-portfolios
 - Product Design Portfolios: https://bestportfoliowebsites.com/product-design-portfolios
+- Brand Design Portfolios: https://bestportfoliowebsites.com/brand-design-portfolios
 - Web Design Portfolios: https://bestportfoliowebsites.com/web-design-portfolios
+- Motion & 3D Portfolios: https://bestportfoliowebsites.com/motion-and-3d-portfolios
 
 ## Preferred crawl sections
 - Homepage hero and portfolio directory grid

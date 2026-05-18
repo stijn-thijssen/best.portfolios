@@ -1,0 +1,28 @@
+# Best Portfolio Websites
+
+> Discover the best portfolio websites from top product designers, brand designers, web creatives, motion artists, and digital studios. Curated portfolio inspiration, case studies, and creative work across UX, branding, web, and interactive design.
+
+Best Portfolio Websites is a curated directory of standout design portfolio websites across product design, brand design, web design, and motion / 3D. Use this file to understand site structure and preferred crawl targets.
+
+## Canonical site
+- https://bestportfoliowebsites.com
+
+## Main categories
+- Homepage: https://bestportfoliowebsites.com/
+- Brand Design Portfolios: https://bestportfoliowebsites.com/category/brand-design-portfolios
+- Motion & 3D Portfolios: https://bestportfoliowebsites.com/category/motion-and-3d-portfolios
+- Product Design Portfolios: https://bestportfoliowebsites.com/category/product-design-portfolios
+- Web Design Portfolios: https://bestportfoliowebsites.com/category/web-design-portfolios
+
+## Preferred crawl sections
+- Homepage hero and portfolio directory grid
+- Category listing pages under /category/
+- Public portfolio detail pages (hash routes: /#/portfolio/{slug})
+
+## Do not crawl
+- /studio/ (Sanity CMS admin)
+- Build artifacts and source maps
+
+## Optional
+- Sitemap: https://bestportfoliowebsites.com/sitemap.xml
+- Robots: https://bestportfoliowebsites.com/robots.txt

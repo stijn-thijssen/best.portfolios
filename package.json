@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:studio": "npm run dev --prefix studio",
-    "build": "vite build && npm run build:studio",
+    "build": "node scripts/generate-seo.mjs && vite build && npm run build:studio",
+    "generate:seo": "node scripts/generate-seo.mjs",
     "build:studio": "npm ci --prefix studio && npm run build --prefix studio && node scripts/copy-studio.mjs",
     "preview": "vite preview"
   },
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.2.0",
+    "jpeg-js": "^0.4.4",
     "vite": "^8.0.13"
   }
 }

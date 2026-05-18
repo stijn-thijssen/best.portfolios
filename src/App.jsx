@@ -58,6 +58,15 @@ function useDocumentTitle(title) {
   }, [title]);
 }
 
+function useDocumentTitle(title) {
+  useEffect(() => {
+    if (!title) return undefined;
+    const previous = document.title;
+    document.title = title;
+    return () => { document.title = previous; };
+  }, [title]);
+}
+
 /* ── Shared components ────────────────────────────── */
 
 const NAV_CTA_LABEL = 'Get inspired →';
